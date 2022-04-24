@@ -12,7 +12,6 @@ func main() {
 
 	initialize.MockInit()
 	initialize.SysInit()
-
 }
 
 type A struct {

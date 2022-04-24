@@ -17,8 +17,8 @@ const (
 	Error   = 7
 )
 
-func Result(code int, data any, message string, description string, c *gin.Context) {
-	c.JSON(http.StatusOK, Response{
+func Result[T any](code int, data T, message string, description string, c *gin.Context) {
+	c.JSON(http.StatusOK, Response[T]{
 		code,
 		data,
 		message,
@@ -27,17 +27,17 @@ func Result(code int, data any, message string, description string, c *gin.Conte
 }
 
 func OK(c *gin.Context) {
-	Result(Success, nil, "successful", "", c)
+	Result(Success, map[string]any{}, "successful", "", c)
 }
 
 func OKWithMessage(message string, c *gin.Context) {
-	Result(Success, nil, message, "", c)
+	Result(Success, map[string]any{}, message, "", c)
 }
 
-func OKWithData(data any, message string, c *gin.Context) {
-	Result(Success, data, "success", "", c)
+func OKWithData[T any](data T, message string, c *gin.Context) {
+	Result[T](Success, data, message, "", c)
 }
 
 func FailWithDescription(message string, description string, c *gin.Context) {
-	Result(Error, nil, message, description, c)
+	Result(Error, map[string]any{}, message, description, c)
 }

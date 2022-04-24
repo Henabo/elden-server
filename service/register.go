@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"github.com/hiro942/elden-server/global"
 	"github.com/hiro942/elden-server/model/request"
 	"github.com/hiro942/elden-server/model/response"
@@ -8,9 +9,16 @@ import (
 	"github.com/hiro942/elden-server/utils/gxios"
 	"github.com/pkg/errors"
 	"github.com/tjfoc/gmsm/x509"
+	"log"
+	"os"
 )
 
 func Register() error {
+	// 创建加密材料目录
+	if err := os.MkdirAll(global.BaseSessionRecordsFilePath, global.DefaultFilePerm); err != nil {
+		log.Panic(fmt.Printf("failed to make directory: %+v", err))
+	}
+
 	// 生成公私钥
 	global.PrivateKey, global.PublicKey = utils.GenerateSm2KeyPair()
 
@@ -37,7 +45,7 @@ func Register() error {
 
 	// HTTP[POST] 添加卫星公钥至区块链
 	responseBytes := gxios.POST(
-		global.FabricAppBaseUrl+"node/satellite/register",
+		global.FabricAppBaseUrl+"/node/satellite/register",
 		request.SatelliteRegister{
 			Id:        global.MySatelliteId,
 			PublicKey: publicKeyHex,
@@ -45,7 +53,7 @@ func Register() error {
 	)
 
 	// 解析http响应
-	res := utils.JsonUnmarshal[response.Response](responseBytes)
+	res := utils.JsonUnmarshal[response.Response[any]](responseBytes)
 
 	// 服务端返回错误
 	if res.Code != 0 {

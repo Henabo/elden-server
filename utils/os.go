@@ -12,7 +12,7 @@ import (
 
 func FileExist(path string) bool {
 	_, err := os.Lstat(path)
-	return os.IsExist(err)
+	return !os.IsNotExist(err)
 }
 
 func ReadKeyPair() {
@@ -57,6 +57,11 @@ func ReadSessionRecords(path string) []model.SessionRecord {
 	// 读文件
 	recordsBytes := ReadFile(path)
 
+	// 若文件本身为空，则不会反序列化成功，直接返回空记录切片即可
+	if len(recordsBytes) == 0 {
+		return []model.SessionRecord{}
+	}
+
 	// 反序列化
 	records := JsonUnmarshal[[]model.SessionRecord](recordsBytes)
 
@@ -90,7 +95,7 @@ func JsonUnmarshal[T any](data []byte) T {
 	var result T
 	err := json.Unmarshal(data, &result)
 	if err != nil {
-		panic("json unmarshal error")
+		log.Panic("json unmarshal error: ", err)
 	}
 	return result
 

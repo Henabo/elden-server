@@ -10,13 +10,13 @@ func Routers() *gin.Engine {
 	r := gin.Default()
 	r.Use(middleware.Cors())
 
-	r.Group("auth")
+	authGroup := r.Group("auth")
 	{
-		r.POST("first/step1", controller.FirstAccessStep1)
-		r.POST("first/step2", controller.FirstAccessStep2)
-		r.POST("normal", controller.NormalAccess)
-		r.POST("prehandover", controller.PreHandover)
-		r.POST("handover", controller.Handover)
+		authGroup.POST("first/step1", controller.FirstAccessStep1)
+		authGroup.POST("first/step2", controller.FirstAccessStep2)
+		authGroup.POST("normal", controller.NormalAccess)
+		authGroup.POST("prehandover", controller.PreHandover)
+		authGroup.POST("handover", controller.Handover)
 	}
 
 	return r

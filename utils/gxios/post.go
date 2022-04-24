@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"github.com/hiro942/elden-server/utils"
 	"io"
+	"log"
 	"net/http"
 )
 
@@ -11,7 +12,7 @@ func POST[T any](url string, body T) []byte {
 	bodyBytes := utils.JsonMarshal(body)
 	request, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		panic("failed to new request")
+		log.Panic("failed to new request", err)
 	}
 
 	request.Header.Set("Content-Type", "application/json")

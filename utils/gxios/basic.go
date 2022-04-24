@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/hiro942/elden-server/global"
 	"github.com/hiro942/elden-server/model"
+	"github.com/hiro942/elden-server/model/request"
 	"github.com/hiro942/elden-server/model/response"
 	"github.com/hiro942/elden-server/utils"
 )
@@ -34,4 +35,11 @@ func QuerySatellitePublicKey(id string) (keyHex string) {
 	resBytes := GET(url)
 	res := GetFormatResponse[string](resBytes)
 	return res.Data
+}
+
+func UpdateAuthStatus(id string) {
+	POST(
+		fmt.Sprintf("%s/node/user/changeAuthStatus", global.FabricAppBaseUrl),
+		request.ChangeAuthStatus{Id: id},
+	)
 }

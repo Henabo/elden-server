@@ -44,6 +44,6 @@ var (
 
 	CurrentSessions = map[string]model.Session{} // key: H-IMSI
 
-	// PreHandoverId 预切换的用户ID
-	PreHandoverId = map[string]struct{}{} // H-IMSI 的集合，value为空struct，不占内存
+	// UserHandoverSet 预切换的用户ID
+	UserHandoverSet = map[string]struct{}{} // H-IMSI 的集合，value为空struct，不占内存
 )
