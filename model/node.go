@@ -23,3 +23,9 @@ type Node struct {
 	CreatedAt    string            `json:"createdAt"`
 	UpdatedAt    string            `json:"updatedAt"`
 }
+
+type CreateAccessRecord struct {
+	Id           string           `json:"id"`
+	MacAddr      string           `json:"macAddr"`
+	AccessRecord UserAccessRecord `json:"accessRecord"`
+}

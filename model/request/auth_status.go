@@ -1,5 +1,6 @@
 package request
 
-type ChangeAuthStatus struct {
-	Id string `json:"id"`
+type ChangeUserAuthStatus struct {
+	Id             string `json:"id"`
+	AuthStatusCode string `json:"authStatusCode"`
 }

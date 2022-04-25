@@ -17,13 +17,15 @@ import (
 )
 
 func FirstAccessStep1(FARWithSig request.MessageWithSig) (resp []byte, err error) {
+	log.Println("Go First Access Authentication.")
+
 	FAR := utils.JsonUnmarshal[request.FAR](FARWithSig.Plain)
 
 	// HTTP[GET] 获取用户公钥
-	userPublicKeyHex := gxios.QueryUserPublicKey(FAR.HashedIMSI, FAR.MacAddr)
+	userPublicKeyHex, _ := gxios.QueryUserPublicKey(FAR.HashedIMSI, FAR.MacAddr)
 	userPublicKey, err := x509.ReadPublicKeyFromHex(userPublicKeyHex)
 	if err != nil {
-		log.Panic(fmt.Printf("failed to resolve public key: %+v", err))
+		log.Panicln(fmt.Printf("failed to resolve public key: %+v", err))
 	}
 
 	// 验证消息签名
@@ -57,8 +59,11 @@ func GetFARStep1Response(userId string, userPublicKey *sm2.PublicKey) (cipher []
 
 	// 记入当前会话集合
 	global.CurrentSessions[userId] = model.Session{
+		Socket:         "localhost:19999",
+		AccessType:     "first",
 		SessionKey:     sessionKeyBytes,
 		ExpirationDate: expirationDate,
+		StartAt:        time.Now().Unix(),
 	}
 
 	// 加签名
@@ -99,13 +104,10 @@ func FirstAccessStep2(FARCipher request.MessageCipher, userId string, userMacAdd
 	})
 
 	// 更新用户认证状态
-	gxios.POST(
-		fmt.Sprintf("%s/node/user/changeAuthStatus", global.FabricAppBaseUrl),
-		request.ChangeAuthStatus{Id: userId},
-	)
+	gxios.ChangeUserAuthStatus(userId, global.AuthStatusCodeCertified)
 
 	// First Access 认证成功
-	log.Println("First Access Passed!")
+	log.Printf("First Access Authentication For %s Passed!\n", userId)
 
 	return nil
 }

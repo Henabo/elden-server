@@ -5,8 +5,8 @@ type NARHashed struct {
 	HashedIMSI       string `json:"hashedIMSI"`
 	MacAddr          string `json:"macAddr"`
 	SatelliteId      string `json:"satelliteId"`
-	TimeStamp        int64  `json:"timeStamp"`
 	HashedSessionKey string `json:"hashedSessionKey"`
+	TimeStamp        int64  `json:"timeStamp"`
 }
 
 // NAREncrypted normal access request with encrypted session key
@@ -14,11 +14,11 @@ type NAREncrypted struct {
 	HashedIMSI  string `json:"hashedIMSI"`
 	MacAddr     string `json:"macAddr"`
 	SatelliteId string `json:"satelliteId"`
-	TimeStamp   int64  `json:"timeStamp"`
-	SessionKeyKeyWithExpDate
+	EncryptedSessionKeyWithExpDate
+	TimeStamp int64 `json:"timeStamp"`
 }
 
-type SessionKeyKeyWithExpDate struct {
-	EncryptedSessionKey string `json:"encryptedSessionKey"`
+type EncryptedSessionKeyWithExpDate struct {
+	EncryptedSessionKey []byte `json:"encryptedSessionKey"`
 	ExpirationDate      int64  `json:"expirationDate"`
 }

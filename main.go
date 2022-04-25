@@ -13,8 +13,3 @@ func main() {
 	initialize.MockInit()
 	initialize.SysInit()
 }
-
-type A struct {
-	Name string
-	Age  int
-}

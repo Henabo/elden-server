@@ -1,6 +1,8 @@
 package model
 
 type Session struct {
+	Socket         string
+	AccessType     string
 	SessionKey     []byte
 	ExpirationDate int64
 	StartAt        int64

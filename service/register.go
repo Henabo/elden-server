@@ -16,7 +16,7 @@ import (
 func Register() error {
 	// 创建加密材料目录
 	if err := os.MkdirAll(global.BaseSessionRecordsFilePath, global.DefaultFilePerm); err != nil {
-		log.Panic(fmt.Printf("failed to make directory: %+v", err))
+		log.Panicln(fmt.Printf("failed to make directory: %+v", err))
 	}
 
 	// 生成公私钥

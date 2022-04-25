@@ -7,39 +7,48 @@ import (
 	"github.com/hiro942/elden-server/model/request"
 	"github.com/hiro942/elden-server/model/response"
 	"github.com/hiro942/elden-server/utils"
+	"github.com/pkg/errors"
 )
 
-func GetFormatResponse[DataType any](resBytes []byte) response.Response[DataType] {
-	res := utils.JsonUnmarshal[response.Response[DataType]](resBytes)
-	return res
-}
-
-func QueryUserPublicKey(id string, macAddr string) (keyHex string) {
+func QueryUserPublicKey(id string, macAddr string) (keyHex string, err error) {
 	url := fmt.Sprintf("%s/node/user/publicKey?id=%s&macAddr=%s",
 		global.FabricAppBaseUrl, id, macAddr)
 	resBytes := GET(url)
-	res := GetFormatResponse[string](resBytes)
-	return res.Data
+	res := utils.JsonUnmarshal[response.Response[string]](resBytes)
+	if res.Code != 0 {
+		return "", errors.Errorf("message: %s, decription: %s", res.Message, res.Description)
+	}
+	return res.Data, nil
 }
 
-func QueryNodeById(id string) model.Node {
+func QuerySatellitePublicKey(id string) (keyHex string, err error) {
+	url := fmt.Sprintf("%s/node/satellite/publicKey?id=%s", global.FabricAppBaseUrl, id)
+	resBytes := GET(url)
+	res := utils.JsonUnmarshal[response.Response[string]](resBytes)
+	if res.Code != 0 {
+		return "", errors.Errorf("message: %s, decription: %s", res.Message, res.Description)
+	}
+	return res.Data, nil
+}
+
+func QueryNodeById(id string) (model.Node, error) {
 	url := fmt.Sprintf("%s/node/search?id=%s",
 		global.FabricAppBaseUrl, id)
 	resBytes := GET(url)
-	res := GetFormatResponse[model.Node](resBytes)
-	return res.Data
+	res := utils.JsonUnmarshal[response.Response[model.Node]](resBytes)
+	if res.Code != 0 {
+		return model.Node{}, errors.Errorf("message: %s, decription: %s", res.Message, res.Description)
+	}
+	return res.Data, nil
 }
 
-func QuerySatellitePublicKey(id string) (keyHex string) {
-	url := fmt.Sprintf("%s/node/satellite/publicKey?id=%s", global.FabricAppBaseUrl, id)
-	resBytes := GET(url)
-	res := GetFormatResponse[string](resBytes)
-	return res.Data
-}
-
-func UpdateAuthStatus(id string) {
-	POST(
+func ChangeUserAuthStatus(id string, authStatusCode string) error {
+	resBytes := POST(
 		fmt.Sprintf("%s/node/user/changeAuthStatus", global.FabricAppBaseUrl),
-		request.ChangeAuthStatus{Id: id},
+		request.ChangeUserAuthStatus{Id: id, AuthStatusCode: authStatusCode},
 	)
+	if res := utils.JsonUnmarshal[response.Response[any]](resBytes); res.Code != 0 {
+		return errors.Errorf("message: %s, decription: %s", res.Message, res.Description)
+	}
+	return nil
 }

@@ -6,11 +6,20 @@ import (
 )
 
 const (
+	TimeTemplate = "2006-01-02 15:04:05"
+)
+
+const (
 	// FabricAppBaseUrl fabric app 地址
 	FabricAppBaseUrl = "http://39.107.126.155:8080"
 
-	// DefaultAuthenticationPort 认证服务默认端口
-	DefaultAuthenticationPort = ":20000"
+	// DefaultAuthenticationPort 认证服务默认端
+	DefaultAuthenticationPort = "20000"
+)
+
+const (
+	AuthStatusCodeCertified   = "1"
+	AuthStatusCodeUnCertified = "0"
 )
 
 const (
@@ -32,9 +41,9 @@ const (
 var (
 	MySatelliteId string
 
-	PrivateKey *sm2.PrivateKey
-	PublicKey  *sm2.PublicKey
-	//SatelliteIPAddr = map[string]string{}  //
+	PrivateKey      *sm2.PrivateKey
+	PublicKey       *sm2.PublicKey
+	SatelliteSocket = map[string]string{}
 
 	// PrivateKeyPwd 私钥加密密码
 	PrivateKeyPwd = []byte("elden")
@@ -46,4 +55,9 @@ var (
 
 	// UserHandoverSet 预切换的用户ID
 	UserHandoverSet = map[string]struct{}{} // H-IMSI 的集合，value为空struct，不占内存
+)
+
+var (
+	MockNewSatelliteId string
+	MockUserId         string
 )

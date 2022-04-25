@@ -27,7 +27,7 @@ func Result[T any](code int, data T, message string, description string, c *gin.
 }
 
 func OK(c *gin.Context) {
-	Result(Success, map[string]any{}, "successful", "", c)
+	Result(Success, map[string]any{}, "ok", "", c)
 }
 
 func OKWithMessage(message string, c *gin.Context) {

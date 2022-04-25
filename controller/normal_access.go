@@ -5,6 +5,7 @@ import (
 	"github.com/hiro942/elden-server/model/request"
 	"github.com/hiro942/elden-server/model/response"
 	"github.com/hiro942/elden-server/service"
+	"log"
 )
 
 // @Summary authentication for normal(fast) access phrase
@@ -19,7 +20,7 @@ func NormalAccess(c *gin.Context) {
 	// 解析请求体
 	var NARWithSig request.MessageWithSig
 	if err := c.ShouldBindJSON(&NARWithSig); err != nil {
-		panic("failed to bind request")
+		log.Panicln("failed to bind request")
 	}
 
 	// 取得URL参携带的参数

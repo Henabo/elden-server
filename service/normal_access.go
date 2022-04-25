@@ -15,11 +15,12 @@ import (
 )
 
 func NormalAccessTypeHashed(NARWithSig request.MessageWithSig) error {
+	log.Println("Go Normal Access (hashed form) Authentication.")
 
 	NAR := utils.JsonUnmarshal[request.NARHashed](NARWithSig.Plain)
 
 	// HTTP[GET] 获取用户信息
-	user := gxios.QueryNodeById(NAR.HashedIMSI)
+	user, _ := gxios.QueryNodeById(NAR.HashedIMSI)
 
 	// 判断账本中有无该用户设备的接入记录, 若无接入纪录则设备需要先进行首次认证
 	if ok := HasAccessRecords(user, NAR.MacAddr); !ok {
@@ -29,7 +30,7 @@ func NormalAccessTypeHashed(NARWithSig request.MessageWithSig) error {
 	// 获取用户公钥
 	userPublicKey, err := x509.ReadPublicKeyFromHex(user.PublicKey[NAR.MacAddr])
 	if err != nil {
-		log.Panic(fmt.Printf("failed to resolve public key: %+v", err))
+		log.Panicln(fmt.Printf("failed to resolve public key: %+v", err))
 	}
 
 	// 验证消息签名
@@ -53,16 +54,20 @@ func NormalAccessTypeHashed(NARWithSig request.MessageWithSig) error {
 	}
 
 	// 更新用户认证状态
-	gxios.UpdateAuthStatus(NAR.HashedIMSI)
+	gxios.ChangeUserAuthStatus(NAR.HashedIMSI, global.AuthStatusCodeCertified)
+
+	log.Printf("Normal Access (hashed form) Authentication For %s Passed!\n", NAR.HashedIMSI)
 
 	return nil
 }
 
 func NormalAccessTypeEncrypted(NARWithSig request.MessageWithSig) error {
+	log.Println("Go Normal Access (encrypted form) Authentication.")
+
 	NAR := utils.JsonUnmarshal[request.NAREncrypted](NARWithSig.Plain)
 
 	// HTTP[GET] 获取用户信息
-	user := gxios.QueryNodeById(NAR.HashedIMSI)
+	user, _ := gxios.QueryNodeById(NAR.HashedIMSI)
 
 	// 判断账本中有无该用户设备的接入记录, 若无接入纪录则设备需要先进行首次认证
 	if ok := HasAccessRecords(user, NAR.MacAddr); !ok {
@@ -72,7 +77,7 @@ func NormalAccessTypeEncrypted(NARWithSig request.MessageWithSig) error {
 	// 获取用户公钥
 	userPublicKey, err := x509.ReadPublicKeyFromHex(user.PublicKey[NAR.MacAddr])
 	if err != nil {
-		log.Panic(fmt.Printf("failed to resolve public key: %+v", err))
+		log.Panicln(fmt.Printf("failed to resolve public key: %+v", err))
 	}
 
 	// 验证消息签名
@@ -90,12 +95,15 @@ func NormalAccessTypeEncrypted(NARWithSig request.MessageWithSig) error {
 		return errors.New("wrong satellite id in request")
 	}
 
+	// 再次校验本地存储的会话密钥是否过期，如果确实过期的话，将新会话密钥更新至文件
 	if err = CheckEncryptedSessionKey(NAR.HashedIMSI, NAR.MacAddr, NAR.EncryptedSessionKey, NAR.ExpirationDate); err != nil {
 		return err
 	}
 
 	// 更新用户认证状态
-	gxios.UpdateAuthStatus(NAR.HashedIMSI)
+	gxios.ChangeUserAuthStatus(NAR.HashedIMSI, global.AuthStatusCodeCertified)
+
+	log.Printf("Normal Access (encrypted form) Authentication For %s Passed!\n", NAR.HashedIMSI)
 
 	return nil
 }
@@ -153,8 +161,11 @@ func CheckHashedSessionKey(id string, macAddr string, hashedSessionKey string) e
 
 	// 记录当前会话
 	global.CurrentSessions[id] = model.Session{
+		Socket:         "localhost:19999",
+		AccessType:     "normal",
 		SessionKey:     currentSessionKey,
 		ExpirationDate: currentExpDate,
+		StartAt:        time.Now().Unix(),
 	}
 
 	return nil
@@ -163,23 +174,40 @@ func CheckHashedSessionKey(id string, macAddr string, hashedSessionKey string) e
 // CheckEncryptedSessionKey 检查会话密钥是否确实已经过期
 // 若没过期，那么用户不应发送新的会话密钥，返回错误
 // 若已过期，那么把用户发送的新会话密钥记入当前会话
-func CheckEncryptedSessionKey(id string, macAddr string, encryptedKey string, ExpDate int64) error {
+func CheckEncryptedSessionKey(id string, macAddr string, encryptedKey []byte, ExpDate int64) error {
 	// 读本地会话记录，再次检查密钥是否已失效
 	sessionRecordsFilePath := global.BaseSessionRecordsFilePath + fmt.Sprintf("%s.json", id)
 	sessionRecords := utils.ReadSessionRecords(sessionRecordsFilePath)
+
+	var sessionKeyBytes []byte
+
 	for _, record := range sessionRecords {
 		if record.MacAddr == macAddr {
+			// 没过期
 			if record.ExpirationDate > time.Now().Unix()+15 {
 				return errors.New("session key has not expired")
 			}
+			// 过期了
+			// 将会话密钥保存至本地
+			sessionKeyBytes = utils.Sm2Decrypt(global.PrivateKey, encryptedKey)
+			utils.WriteNewSessionRecord(sessionRecordsFilePath, model.SessionRecord{
+				MacAddr:        macAddr,
+				SessionKey:     string(sessionKeyBytes),
+				ExpirationDate: ExpDate,
+			})
 			break
 		}
 	}
 
+	log.Println("Received Session Key:", string(sessionKeyBytes))
+
 	// 记录当前会话
 	global.CurrentSessions[id] = model.Session{
-		SessionKey:     utils.Sm2Decrypt(global.PrivateKey, []byte(encryptedKey)),
+		Socket:         "localhost:19999",
+		AccessType:     "normal",
+		SessionKey:     sessionKeyBytes,
 		ExpirationDate: ExpDate,
+		StartAt:        time.Now().Unix(),
 	}
 
 	return nil

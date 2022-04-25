@@ -6,6 +6,8 @@ import (
 	"github.com/hiro942/elden-server/router"
 	"github.com/hiro942/elden-server/service"
 	"github.com/hiro942/elden-server/utils"
+	"log"
+	"time"
 )
 
 func SysInit() {
@@ -13,12 +15,17 @@ func SysInit() {
 	// 生成公私钥，并将公钥注册上链
 	if !utils.FileExist(global.PrivateKeyPath) || !utils.FileExist(global.PublicKeyPath) {
 		if err := service.Register(); err != nil {
-			panic(fmt.Errorf("register error: %v", err))
+			log.Panicln(fmt.Errorf("register error: %v", err))
 		}
 	} else {
 		utils.ReadKeyPair()
 	}
 
-	r := router.Routers()
-	r.Run(global.DefaultAuthenticationPort)
+	go router.Routers().Run(":" + global.DefaultAuthenticationPort)
+	time.Sleep(time.Second * 30)
+
+	service.PreHandover(global.MockUserId)
+
+	for {
+	}
 }

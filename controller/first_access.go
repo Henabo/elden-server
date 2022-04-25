@@ -5,6 +5,7 @@ import (
 	"github.com/hiro942/elden-server/model/request"
 	"github.com/hiro942/elden-server/model/response"
 	"github.com/hiro942/elden-server/service"
+	"log"
 )
 
 // @Summary authentication for first access phrase, step 1
@@ -18,7 +19,7 @@ func FirstAccessStep1(c *gin.Context) {
 
 	var FARWithSig request.MessageWithSig
 	if err := c.ShouldBindJSON(&FARWithSig); err != nil {
-		panic("failed to bind request")
+		log.Panicln("failed to bind request")
 	}
 
 	FARResponse, err := service.FirstAccessStep1(FARWithSig)
@@ -41,7 +42,7 @@ func FirstAccessStep2(c *gin.Context) {
 
 	var FARCipher request.MessageCipher
 	if err := c.ShouldBindJSON(&FARCipher); err != nil {
-		panic("failed to bind request")
+		log.Panicln("failed to bind request")
 	}
 
 	userId := c.Query("id")
