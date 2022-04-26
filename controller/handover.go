@@ -42,7 +42,7 @@ func Handover(c *gin.Context) {
 		// 将该用户移出切换集合
 		delete(global.UserHandoverSet, HAR.HashedIMSI)
 		// 逻辑同快速认证
-		if err := service.NormalAccessTypeHashed(HARWithSig); err != nil {
+		if err := service.NormalAccessTypeHashed(HARWithSig, true); err != nil {
 			response.FailWithDescription(DefaultErrorMessage, err.Error(), c)
 			return
 		}
@@ -57,7 +57,7 @@ func Handover(c *gin.Context) {
 		// 将该用户移出切换集合
 		delete(global.UserHandoverSet, HAR.HashedIMSI)
 		// 逻辑同快速认证
-		if err := service.NormalAccessTypeEncrypted(HARWithSig); err != nil {
+		if err := service.NormalAccessTypeEncrypted(HARWithSig, true); err != nil {
 			response.FailWithDescription(DefaultErrorMessage, err.Error(), c)
 			return
 		}

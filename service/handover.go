@@ -47,7 +47,6 @@ func PreHandover(userId string) error {
 	// 将新卫星发送给用户设备
 	url = fmt.Sprintf("http://%s/auth/prehandover/new_satellite?id=%s", global.CurrentSessions[userId].Socket, global.MockNewSatelliteId)
 	res3Bytes := gxios.POST(url, "")
-	fmt.Println("$##########", res3Bytes)
 	res3 := utils.JsonUnmarshal[response.Response[any]](res3Bytes)
 	if res3.Code != 0 {
 		return errors.Errorf("message: %s, decription: %s", res3.Message, res3.Description)

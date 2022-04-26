@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-func NormalAccessTypeHashed(NARWithSig request.MessageWithSig) error {
+func NormalAccessTypeHashed(NARWithSig request.MessageWithSig, isTypeHandover bool) error {
 	log.Println("Go Normal Access (hashed form) Authentication.")
 
 	NAR := utils.JsonUnmarshal[request.NARHashed](NARWithSig.Plain)
@@ -22,9 +22,11 @@ func NormalAccessTypeHashed(NARWithSig request.MessageWithSig) error {
 	// HTTP[GET] 获取用户信息
 	user, _ := gxios.QueryNodeById(NAR.HashedIMSI)
 
-	// 判断账本中有无该用户设备的接入记录, 若无接入纪录则设备需要先进行首次认证
-	if ok := HasAccessRecords(user, NAR.MacAddr); !ok {
-		return errors.New("the device have not accessed before, please go first access")
+	if !isTypeHandover {
+		// 判断账本中有无该用户设备的接入记录, 若无接入纪录则设备需要先进行首次认证
+		if ok := HasAccessRecords(user, NAR.MacAddr); !ok {
+			return errors.New("the device have not accessed before, please go first access")
+		}
 	}
 
 	// 获取用户公钥
@@ -61,7 +63,7 @@ func NormalAccessTypeHashed(NARWithSig request.MessageWithSig) error {
 	return nil
 }
 
-func NormalAccessTypeEncrypted(NARWithSig request.MessageWithSig) error {
+func NormalAccessTypeEncrypted(NARWithSig request.MessageWithSig, isTypeHandover bool) error {
 	log.Println("Go Normal Access (encrypted form) Authentication.")
 
 	NAR := utils.JsonUnmarshal[request.NAREncrypted](NARWithSig.Plain)
@@ -69,9 +71,11 @@ func NormalAccessTypeEncrypted(NARWithSig request.MessageWithSig) error {
 	// HTTP[GET] 获取用户信息
 	user, _ := gxios.QueryNodeById(NAR.HashedIMSI)
 
-	// 判断账本中有无该用户设备的接入记录, 若无接入纪录则设备需要先进行首次认证
-	if ok := HasAccessRecords(user, NAR.MacAddr); !ok {
-		return errors.New("the device have not accessed before, please go first access")
+	if !isTypeHandover {
+		// 判断账本中有无该用户设备的接入记录, 若无接入纪录则设备需要先进行首次认证
+		if ok := HasAccessRecords(user, NAR.MacAddr); !ok {
+			return errors.New("the device have not accessed before, please go first access")
+		}
 	}
 
 	// 获取用户公钥
@@ -96,7 +100,7 @@ func NormalAccessTypeEncrypted(NARWithSig request.MessageWithSig) error {
 	}
 
 	// 再次校验本地存储的会话密钥是否过期，如果确实过期的话，将新会话密钥更新至文件
-	if err = CheckEncryptedSessionKey(NAR.HashedIMSI, NAR.MacAddr, NAR.EncryptedSessionKey, NAR.ExpirationDate); err != nil {
+	if err = CheckEncryptedSessionKey(NAR.HashedIMSI, NAR.MacAddr, NAR.EncryptedSessionKey, NAR.ExpirationDate, isTypeHandover); err != nil {
 		return err
 	}
 
@@ -174,9 +178,17 @@ func CheckHashedSessionKey(id string, macAddr string, hashedSessionKey string) e
 // CheckEncryptedSessionKey 检查会话密钥是否确实已经过期
 // 若没过期，那么用户不应发送新的会话密钥，返回错误
 // 若已过期，那么把用户发送的新会话密钥记入当前会话
-func CheckEncryptedSessionKey(id string, macAddr string, encryptedKey []byte, ExpDate int64) error {
+func CheckEncryptedSessionKey(id string, macAddr string, encryptedKey []byte, ExpDate int64, isTypeHandover bool) error {
 	// 读本地会话记录，再次检查密钥是否已失效
 	sessionRecordsFilePath := global.BaseSessionRecordsFilePath + fmt.Sprintf("%s.json", id)
+
+	// 切换认证时，可能本地没有该用户的会话密钥记录
+	// 若本地存在该用户的会话密钥记录，再往下判断密钥是否过期
+	// 否则返回即可
+	if isTypeHandover && !utils.FileExist(sessionRecordsFilePath) {
+		return nil
+	}
+
 	sessionRecords := utils.ReadSessionRecords(sessionRecordsFilePath)
 
 	var sessionKeyBytes []byte

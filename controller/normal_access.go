@@ -31,12 +31,12 @@ func NormalAccess(c *gin.Context) {
 	}
 
 	if keyType == "hashed" {
-		if err := service.NormalAccessTypeHashed(NARWithSig); err != nil {
+		if err := service.NormalAccessTypeHashed(NARWithSig, false); err != nil {
 			response.FailWithDescription(DefaultErrorMessage, err.Error(), c)
 			return
 		}
 	} else {
-		if err := service.NormalAccessTypeEncrypted(NARWithSig); err != nil {
+		if err := service.NormalAccessTypeEncrypted(NARWithSig, false); err != nil {
 			response.FailWithDescription(DefaultErrorMessage, err.Error(), c)
 			return
 		}
