@@ -3,6 +3,7 @@ package controller
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/hiro942/elden-server/global"
+	"github.com/hiro942/elden-server/global/url"
 	"github.com/hiro942/elden-server/model"
 	"github.com/hiro942/elden-server/model/request"
 	"github.com/hiro942/elden-server/model/response"
@@ -22,14 +23,13 @@ func DisConnect(c *gin.Context) {
 	}
 
 	// 在账本中添加用户访问记录
-	url := global.FabricAppBaseUrl + "/node/user/accessRecord"
-	gxios.POST(url, model.CreateAccessRecord{
+	gxios.POST(url.CreateAccessRecord, model.CreateAccessRecord{
 		Id:      r.Id,
 		MacAddr: r.MacAddr,
 		AccessRecord: model.UserAccessRecord{
 			AccessType:          global.CurrentSessions[r.Id].AccessType,
 			SatelliteId:         global.MySatelliteId,
-			PreviousSatelliteId: "",
+			PreviousSatelliteId: global.CurrentSessions[r.Id].PreviousSatelliteId,
 			StartAt:             time.Unix(global.CurrentSessions[r.Id].StartAt, 0).Format(global.TimeTemplate),
 			EndAt:               time.Now().Format(global.TimeTemplate),
 		},

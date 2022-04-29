@@ -20,6 +20,10 @@ const (
 const (
 	AuthStatusCodeCertified   = "1"
 	AuthStatusCodeUnCertified = "0"
+
+	FirstAccess    = "first"
+	NormalAccess   = "normal"
+	HandoverAccess = "handover"
 )
 
 const (
@@ -35,15 +39,16 @@ const (
 	DefaultFilePerm = 0777
 
 	// DefaultSessionKeyAge 会话密钥默认寿命
-	DefaultSessionKeyAge = 60 * 60 * 24
+	DefaultSessionKeyAge = 3600 * 24
 )
 
 var (
 	MySatelliteId string
 
-	PrivateKey      *sm2.PrivateKey
-	PublicKey       *sm2.PublicKey
-	SatelliteSocket = map[string]string{}
+	PrivateKey       *sm2.PrivateKey
+	PublicKey        *sm2.PublicKey
+	SatelliteSockets = map[string]string{}
+	UserSockets      = map[string]string{}
 
 	// PrivateKeyPwd 私钥加密密码
 	PrivateKeyPwd = []byte("elden")
@@ -54,10 +59,5 @@ var (
 	CurrentSessions = map[string]model.Session{} // key: H-IMSI
 
 	// UserHandoverSet 预切换的用户ID
-	UserHandoverSet = map[string]struct{}{} // H-IMSI 的集合，value为空struct，不占内存
-)
-
-var (
-	MockNewSatelliteId string
-	MockUserId         string
+	UserHandoverSet = map[string]string{} // H-IMSI -> PreviousSatellite
 )

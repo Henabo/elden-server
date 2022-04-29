@@ -39,13 +39,13 @@ func Handover(c *gin.Context) {
 			return
 		}
 		log.Println("已确认用户在切换集合内")
-		// 将该用户移出切换集合
-		delete(global.UserHandoverSet, HAR.HashedIMSI)
 		// 逻辑同快速认证
 		if err := service.NormalAccessTypeHashed(HARWithSig, true); err != nil {
 			response.FailWithDescription(DefaultErrorMessage, err.Error(), c)
 			return
 		}
+		// 认证完成后将该用户移出切换集合
+		delete(global.UserHandoverSet, HAR.HashedIMSI)
 	} else {
 		HAR := utils.JsonUnmarshal[request.NAREncrypted](HARWithSig.Plain)
 		// 判断该用户是否在切换集合内
@@ -54,13 +54,13 @@ func Handover(c *gin.Context) {
 			return
 		}
 		log.Println("已确认用户在切换集合内")
-		// 将该用户移出切换集合
-		delete(global.UserHandoverSet, HAR.HashedIMSI)
 		// 逻辑同快速认证
 		if err := service.NormalAccessTypeEncrypted(HARWithSig, true); err != nil {
 			response.FailWithDescription(DefaultErrorMessage, err.Error(), c)
 			return
 		}
+		// 认证完成后将该用户移出切换集合
+		delete(global.UserHandoverSet, HAR.HashedIMSI)
 	}
 
 	response.OKWithMessage(DefaultSuccessMessage, c)

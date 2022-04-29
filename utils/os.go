@@ -1,11 +1,9 @@
 package utils
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/hiro942/elden-server/global"
 	"github.com/hiro942/elden-server/model"
-	"github.com/tjfoc/gmsm/x509"
 	"log"
 	"os"
 )
@@ -20,18 +18,11 @@ func ReadKeyPair() {
 	privateKeyPem := ReadFile(global.PrivateKeyPath)
 	publicKeyPem := ReadFile(global.PublicKeyPath)
 
-	// 转化私钥
-	privateKey, err := x509.ReadPrivateKeyFromPem(privateKeyPem, global.PrivateKeyPwd)
-	if err != nil {
-		log.Panicln(fmt.Printf("failed to convert pem to sm2 private key: %+v", err))
-	}
+	// 公私钥转化
+	privateKey := ReadPrivateKeyFromPem(privateKeyPem)
+	publicKey := ReadPublicKeyFromPem(publicKeyPem)
 
-	// 转化公钥
-	publicKey, err := x509.ReadPublicKeyFromPem(publicKeyPem)
-	if err != nil {
-		log.Panicln(fmt.Printf("failed to convert pem to sm2 public key: %+v", err))
-	}
-
+	// 更新系统全局变量
 	global.PrivateKey = privateKey
 	global.PublicKey = publicKey
 }
@@ -81,22 +72,4 @@ func ReadFile(path string) []byte {
 		log.Panicln(fmt.Printf("failed to read file: %+v", err))
 	}
 	return data
-}
-
-func JsonMarshal(v any) []byte {
-	result, err := json.Marshal(v)
-	if err != nil {
-		log.Panicln("json marshal error")
-	}
-	return result
-}
-
-func JsonUnmarshal[T any](data []byte) T {
-	var result T
-	err := json.Unmarshal(data, &result)
-	if err != nil {
-		log.Panicln("json unmarshal error: ", err)
-	}
-	return result
-
 }

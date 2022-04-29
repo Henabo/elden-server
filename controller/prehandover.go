@@ -1,14 +1,12 @@
 package controller
 
 import (
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/hiro942/elden-server/global"
 	"github.com/hiro942/elden-server/model/request"
 	"github.com/hiro942/elden-server/model/response"
 	"github.com/hiro942/elden-server/utils"
 	"github.com/hiro942/elden-server/utils/gxios"
-	"github.com/tjfoc/gmsm/x509"
 	"log"
 )
 
@@ -30,10 +28,7 @@ func PreHandoverSigFromOtherSatellite(c *gin.Context) {
 
 	// HTTP[GET] 获取原卫星公钥
 	previousSatellitePublicKeyHex, _ := gxios.QuerySatellitePublicKey(preHandover.PreviousSatelliteId)
-	previousSatellitePublicKey, err := x509.ReadPublicKeyFromHex(previousSatellitePublicKeyHex)
-	if err != nil {
-		log.Panicln(fmt.Printf("failed to resolve public key: %+v", err))
-	}
+	previousSatellitePublicKey := utils.ReadPublicKeyFromHex(previousSatellitePublicKeyHex)
 
 	// 验证消息签名
 	if !utils.Sm2Verify(previousSatellitePublicKey, preHandoverWithSig.Plain, preHandoverWithSig.Signature) {
@@ -42,7 +37,8 @@ func PreHandoverSigFromOtherSatellite(c *gin.Context) {
 	}
 
 	// 将该用户设备加入待切换名单
-	global.UserHandoverSet[preHandover.HashedIMSI] = struct{}{}
+	global.UserHandoverSet[preHandover.HashedIMSI] = preHandover.PreviousSatelliteId
+	log.Printf("Successfully receive the handover signature from the %s.\n", preHandover.PreviousSatelliteId)
 
 	response.OKWithMessage(DefaultSuccessMessage, c)
 }

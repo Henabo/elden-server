@@ -8,13 +8,12 @@ import (
 	"github.com/hiro942/elden-server/utils"
 	"github.com/hiro942/elden-server/utils/gxios"
 	"github.com/pkg/errors"
-	"github.com/tjfoc/gmsm/x509"
 	"log"
 	"strings"
 	"time"
 )
 
-func NormalAccessTypeHashed(NARWithSig request.MessageWithSig, isTypeHandover bool) error {
+func NormalAccessTypeHashed(NARWithSig request.MessageWithSig, isHandover bool) error {
 	log.Println("Go Normal Access (hashed form) Authentication.")
 
 	NAR := utils.JsonUnmarshal[request.NARHashed](NARWithSig.Plain)
@@ -22,7 +21,7 @@ func NormalAccessTypeHashed(NARWithSig request.MessageWithSig, isTypeHandover bo
 	// HTTP[GET] 获取用户信息
 	user, _ := gxios.QueryNodeById(NAR.HashedIMSI)
 
-	if !isTypeHandover {
+	if !isHandover {
 		// 判断账本中有无该用户设备的接入记录, 若无接入纪录则设备需要先进行首次认证
 		if ok := HasAccessRecords(user, NAR.MacAddr); !ok {
 			return errors.New("the device have not accessed before, please go first access")
@@ -30,10 +29,7 @@ func NormalAccessTypeHashed(NARWithSig request.MessageWithSig, isTypeHandover bo
 	}
 
 	// 获取用户公钥
-	userPublicKey, err := x509.ReadPublicKeyFromHex(user.PublicKey[NAR.MacAddr])
-	if err != nil {
-		log.Panicln(fmt.Printf("failed to resolve public key: %+v", err))
-	}
+	userPublicKey := utils.ReadPublicKeyFromHex(user.PublicKey[NAR.MacAddr])
 
 	// 验证消息签名
 	if !utils.Sm2Verify(userPublicKey, NARWithSig.Plain, NARWithSig.Signature) {
@@ -41,7 +37,7 @@ func NormalAccessTypeHashed(NARWithSig request.MessageWithSig, isTypeHandover bo
 	}
 
 	// 重放攻击校验
-	if err = CheckReplayAttach(NAR.HashedIMSI, NAR.TimeStamp); err != nil {
+	if err := CheckReplayAttach(NAR.HashedIMSI, NAR.TimeStamp); err != nil {
 		return err
 	}
 
@@ -51,7 +47,7 @@ func NormalAccessTypeHashed(NARWithSig request.MessageWithSig, isTypeHandover bo
 	}
 
 	// 验证会话密钥的哈希值是否正确。若正确，则将密钥取出，记入当前会话
-	if err = CheckHashedSessionKey(NAR.HashedIMSI, NAR.MacAddr, NAR.HashedSessionKey); err != nil {
+	if err := CheckHashedSessionKey(NAR.HashedIMSI, NAR.MacAddr, NAR.HashedSessionKey, isHandover); err != nil {
 		return err
 	}
 
@@ -63,7 +59,7 @@ func NormalAccessTypeHashed(NARWithSig request.MessageWithSig, isTypeHandover bo
 	return nil
 }
 
-func NormalAccessTypeEncrypted(NARWithSig request.MessageWithSig, isTypeHandover bool) error {
+func NormalAccessTypeEncrypted(NARWithSig request.MessageWithSig, isHandover bool) error {
 	log.Println("Go Normal Access (encrypted form) Authentication.")
 
 	NAR := utils.JsonUnmarshal[request.NAREncrypted](NARWithSig.Plain)
@@ -71,7 +67,7 @@ func NormalAccessTypeEncrypted(NARWithSig request.MessageWithSig, isTypeHandover
 	// HTTP[GET] 获取用户信息
 	user, _ := gxios.QueryNodeById(NAR.HashedIMSI)
 
-	if !isTypeHandover {
+	if !isHandover {
 		// 判断账本中有无该用户设备的接入记录, 若无接入纪录则设备需要先进行首次认证
 		if ok := HasAccessRecords(user, NAR.MacAddr); !ok {
 			return errors.New("the device have not accessed before, please go first access")
@@ -79,10 +75,7 @@ func NormalAccessTypeEncrypted(NARWithSig request.MessageWithSig, isTypeHandover
 	}
 
 	// 获取用户公钥
-	userPublicKey, err := x509.ReadPublicKeyFromHex(user.PublicKey[NAR.MacAddr])
-	if err != nil {
-		log.Panicln(fmt.Printf("failed to resolve public key: %+v", err))
-	}
+	userPublicKey := utils.ReadPublicKeyFromHex(user.PublicKey[NAR.MacAddr])
 
 	// 验证消息签名
 	if !utils.Sm2Verify(userPublicKey, NARWithSig.Plain, NARWithSig.Signature) {
@@ -90,7 +83,7 @@ func NormalAccessTypeEncrypted(NARWithSig request.MessageWithSig, isTypeHandover
 	}
 
 	// 重放攻击校验
-	if err = CheckReplayAttach(NAR.HashedIMSI, NAR.TimeStamp); err != nil {
+	if err := CheckReplayAttach(NAR.HashedIMSI, NAR.TimeStamp); err != nil {
 		return err
 	}
 
@@ -100,7 +93,7 @@ func NormalAccessTypeEncrypted(NARWithSig request.MessageWithSig, isTypeHandover
 	}
 
 	// 再次校验本地存储的会话密钥是否过期，如果确实过期的话，将新会话密钥更新至文件
-	if err = CheckEncryptedSessionKey(NAR.HashedIMSI, NAR.MacAddr, NAR.EncryptedSessionKey, NAR.ExpirationDate, isTypeHandover); err != nil {
+	if err := CheckEncryptedSessionKey(NAR.HashedIMSI, NAR.MacAddr, NAR.EncryptedSessionKey, NAR.ExpirationDate, isHandover); err != nil {
 		return err
 	}
 
@@ -138,9 +131,9 @@ func CheckReplayAttach(userId string, timeStamp int64) error {
 }
 
 // CheckHashedSessionKey 检查设备发送的密钥哈希是否正确且没有过期
-func CheckHashedSessionKey(id string, macAddr string, hashedSessionKey string) error {
+func CheckHashedSessionKey(userId string, macAddr string, hashedSessionKey string, isHandover bool) error {
 	// 读本地会话记录
-	sessionRecordsFilePath := global.BaseSessionRecordsFilePath + fmt.Sprintf("%s.json", id)
+	sessionRecordsFilePath := global.BaseSessionRecordsFilePath + fmt.Sprintf("%s.json", userId)
 	sessionRecords := utils.ReadSessionRecords(sessionRecordsFilePath)
 
 	var currentSessionKey []byte
@@ -163,13 +156,23 @@ func CheckHashedSessionKey(id string, macAddr string, hashedSessionKey string) e
 		}
 	}
 
+	accessType := global.NormalAccess
+	if isHandover {
+		accessType = global.HandoverAccess
+	}
+
+	previousSatelliteId := ""
+	if isHandover {
+		previousSatelliteId = global.UserHandoverSet[userId]
+	}
 	// 记录当前会话
-	global.CurrentSessions[id] = model.Session{
-		Socket:         "localhost:19999",
-		AccessType:     "normal",
-		SessionKey:     currentSessionKey,
-		ExpirationDate: currentExpDate,
-		StartAt:        time.Now().Unix(),
+	global.CurrentSessions[userId] = model.Session{
+		Socket:              global.UserSockets[userId],
+		AccessType:          accessType,
+		PreviousSatelliteId: previousSatelliteId,
+		SessionKey:          currentSessionKey,
+		ExpirationDate:      currentExpDate,
+		StartAt:             time.Now().Unix(),
 	}
 
 	return nil
@@ -178,48 +181,53 @@ func CheckHashedSessionKey(id string, macAddr string, hashedSessionKey string) e
 // CheckEncryptedSessionKey 检查会话密钥是否确实已经过期
 // 若没过期，那么用户不应发送新的会话密钥，返回错误
 // 若已过期，那么把用户发送的新会话密钥记入当前会话
-func CheckEncryptedSessionKey(id string, macAddr string, encryptedKey []byte, ExpDate int64, isTypeHandover bool) error {
+func CheckEncryptedSessionKey(userId string, macAddr string, encryptedKey []byte, ExpDate int64, isHandover bool) error {
 	// 读本地会话记录，再次检查密钥是否已失效
-	sessionRecordsFilePath := global.BaseSessionRecordsFilePath + fmt.Sprintf("%s.json", id)
+	sessionRecordsFilePath := global.BaseSessionRecordsFilePath + fmt.Sprintf("%s.json", userId)
 
-	// 切换认证时，可能本地没有该用户的会话密钥记录
-	// 若本地存在该用户的会话密钥记录，再往下判断密钥是否过期
-	// 否则返回即可
-	if isTypeHandover && !utils.FileExist(sessionRecordsFilePath) {
-		return nil
-	}
-
-	sessionRecords := utils.ReadSessionRecords(sessionRecordsFilePath)
-
-	var sessionKeyBytes []byte
-
-	for _, record := range sessionRecords {
-		if record.MacAddr == macAddr {
-			// 没过期
-			if record.ExpirationDate > time.Now().Unix()+15 {
-				return errors.New("session key has not expired")
+	// 若存在会话记录文件，则校验密钥是否过期
+	if utils.FileExist(sessionRecordsFilePath) {
+		sessionRecords := utils.ReadSessionRecords(sessionRecordsFilePath)
+		for _, record := range sessionRecords {
+			if record.MacAddr == macAddr {
+				// 没过期
+				if record.ExpirationDate > time.Now().Unix()+15 {
+					return errors.New("session key has not expired")
+				}
+				break
 			}
-			// 过期了
-			// 将会话密钥保存至本地
-			sessionKeyBytes = utils.Sm2Decrypt(global.PrivateKey, encryptedKey)
-			utils.WriteNewSessionRecord(sessionRecordsFilePath, model.SessionRecord{
-				MacAddr:        macAddr,
-				SessionKey:     string(sessionKeyBytes),
-				ExpirationDate: ExpDate,
-			})
-			break
 		}
+	} else if isHandover == false {
+		return errors.New("access type is 'normal' but there exists no local session records.")
 	}
 
-	log.Println("Received Session Key:", string(sessionKeyBytes))
+	// 密钥已过期，或切换认证时不存在本地会话记录文件
+	// 生成会话密钥并将其保存至本地
+	sessionKeyBytes := utils.Sm2Decrypt(global.PrivateKey, encryptedKey)
+	utils.WriteNewSessionRecord(sessionRecordsFilePath, model.SessionRecord{
+		MacAddr:        macAddr,
+		SessionKey:     string(sessionKeyBytes),
+		ExpirationDate: ExpDate,
+	})
+
+	accessType := global.NormalAccess
+	if isHandover {
+		accessType = global.HandoverAccess
+	}
+
+	previousSatelliteId := ""
+	if isHandover {
+		previousSatelliteId = global.UserHandoverSet[userId]
+	}
 
 	// 记录当前会话
-	global.CurrentSessions[id] = model.Session{
-		Socket:         "localhost:19999",
-		AccessType:     "normal",
-		SessionKey:     sessionKeyBytes,
-		ExpirationDate: ExpDate,
-		StartAt:        time.Now().Unix(),
+	global.CurrentSessions[userId] = model.Session{
+		Socket:              global.UserSockets[userId],
+		AccessType:          accessType,
+		PreviousSatelliteId: previousSatelliteId,
+		SessionKey:          sessionKeyBytes,
+		ExpirationDate:      ExpDate,
+		StartAt:             time.Now().Unix(),
 	}
 
 	return nil

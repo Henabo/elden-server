@@ -10,7 +10,6 @@ import (
 	"github.com/hiro942/elden-server/utils/gxios"
 	"github.com/pkg/errors"
 	"github.com/tjfoc/gmsm/sm2"
-	"github.com/tjfoc/gmsm/x509"
 	"log"
 	"math/rand"
 	"time"
@@ -23,10 +22,7 @@ func FirstAccessStep1(FARWithSig request.MessageWithSig) (resp []byte, err error
 
 	// HTTP[GET] 获取用户公钥
 	userPublicKeyHex, _ := gxios.QueryUserPublicKey(FAR.HashedIMSI, FAR.MacAddr)
-	userPublicKey, err := x509.ReadPublicKeyFromHex(userPublicKeyHex)
-	if err != nil {
-		log.Panicln(fmt.Printf("failed to resolve public key: %+v", err))
-	}
+	userPublicKey := utils.ReadPublicKeyFromHex(userPublicKeyHex)
 
 	// 验证消息签名
 	if !utils.Sm2Verify(userPublicKey, FARWithSig.Plain, FARWithSig.Signature) {
@@ -59,11 +55,12 @@ func GetFARStep1Response(userId string, userPublicKey *sm2.PublicKey) (cipher []
 
 	// 记入当前会话集合
 	global.CurrentSessions[userId] = model.Session{
-		Socket:         "localhost:19999",
-		AccessType:     "first",
-		SessionKey:     sessionKeyBytes,
-		ExpirationDate: expirationDate,
-		StartAt:        time.Now().Unix(),
+		Socket:              global.UserSockets[userId],
+		AccessType:          global.FirstAccess,
+		PreviousSatelliteId: "",
+		SessionKey:          sessionKeyBytes,
+		ExpirationDate:      expirationDate,
+		StartAt:             time.Now().Unix(),
 	}
 
 	// 加签名
