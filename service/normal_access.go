@@ -14,7 +14,7 @@ import (
 )
 
 func NormalAccessTypeHashed(NARWithSig request.MessageWithSig, isHandover bool) error {
-	log.Println("Go Normal Access (hashed form) Authentication.")
+	log.Println("[Normal-Access](hashed form) Go Normal Access Authentication.")
 
 	NAR := utils.JsonUnmarshal[request.NARHashed](NARWithSig.Plain)
 
@@ -54,13 +54,13 @@ func NormalAccessTypeHashed(NARWithSig request.MessageWithSig, isHandover bool) 
 	// 更新用户认证状态
 	gxios.ChangeUserAuthStatus(NAR.HashedIMSI, global.AuthStatusCodeCertified)
 
-	log.Printf("Normal Access (hashed form) Authentication For %s Passed!\n", NAR.HashedIMSI)
+	log.Printf("[Normal Access](hashed form) Authentication For %s Passed!\n", NAR.HashedIMSI)
 
 	return nil
 }
 
 func NormalAccessTypeEncrypted(NARWithSig request.MessageWithSig, isHandover bool) error {
-	log.Println("Go Normal Access (encrypted form) Authentication.")
+	log.Println("[Normal-Access](encrypted form) Go Normal Access Authentication.")
 
 	NAR := utils.JsonUnmarshal[request.NAREncrypted](NARWithSig.Plain)
 
@@ -100,7 +100,7 @@ func NormalAccessTypeEncrypted(NARWithSig request.MessageWithSig, isHandover boo
 	// 更新用户认证状态
 	gxios.ChangeUserAuthStatus(NAR.HashedIMSI, global.AuthStatusCodeCertified)
 
-	log.Printf("Normal Access (encrypted form) Authentication For %s Passed!\n", NAR.HashedIMSI)
+	log.Printf("[Normal-Access](encrypted form) Authentication For %s Passed!\n", NAR.HashedIMSI)
 
 	return nil
 }

@@ -6,9 +6,9 @@ import (
 )
 
 func MockInit() {
-	mock.UserId = "hashed-UUU"
-	global.MySatelliteId = "satellite-AAA"
-	mock.NewSatelliteId = "satellite-BBB"
+	mock.UserId = "hashed-19999-test"
+	global.MySatelliteId = "satellite-20000-test"
+	mock.NewSatelliteId = "satellite-20001-test"
 	global.UserSockets[mock.UserId] = "localhost:19999"
 	global.SatelliteSockets[global.MySatelliteId] = "localhost:20000"
 	global.SatelliteSockets[mock.NewSatelliteId] = "localhost:20001"

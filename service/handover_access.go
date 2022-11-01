@@ -14,7 +14,7 @@ import (
 )
 
 func PreHandover(userId string) error {
-	log.Println("Pre-Handover: Request the user for location.")
+	log.Println("[Handover-Access] Request for user location.")
 
 	// 请求终端设备位置信息
 	resLocationBytes := gxios.POST(url.RequestForUserLocation(userId), "")
@@ -24,8 +24,8 @@ func PreHandover(userId string) error {
 	}
 
 	// 根据res.Data即用户位置信息选出一个合适的交接卫星
-	log.Println("Pre-Handover: Choose a new satellite for the user.")
-	log.Println("Pre-Handover: Sign a handover message to the new satellite.")
+	log.Println("[Handover-Access] Choose a new satellite for the user.")
+	log.Println("[Handover-Access] Sign a handover message to the new satellite.")
 
 	// 给选择的新卫星发送签名消息
 	preHandoverSig := request.PreHandoverToOtherSatellite{
@@ -45,7 +45,7 @@ func PreHandover(userId string) error {
 		return errors.Errorf("message: %s, decription: %s", resSig.Message, resSig.Description)
 	}
 
-	log.Println("Pre-Handover: Send the new satellite ID to the user")
+	log.Println("[Handover-Access] Send the new satellite ID to the user")
 	// 将新卫星发送给用户设备
 	resNewSatelliteBytes := gxios.POST(url.NewSatelliteIdToUser(userId, mock.NewSatelliteId), "")
 	resNewSatellite := utils.JsonUnmarshal[response.Response[any]](resNewSatelliteBytes)
@@ -53,6 +53,6 @@ func PreHandover(userId string) error {
 		return errors.Errorf("message: %s, decription: %s", resNewSatellite.Message, resNewSatellite.Description)
 	}
 
-	log.Println("Pre-Handover: The user has successfully received the new satellite ID.")
+	log.Println("[Handover-Access] The user has successfully received the new satellite ID.")
 	return nil
 }

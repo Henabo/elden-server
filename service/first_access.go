@@ -16,7 +16,7 @@ import (
 )
 
 func FirstAccessStep1(FARWithSig request.MessageWithSig) (resp []byte, err error) {
-	log.Println("Go First Access Authentication.")
+	log.Println("[First-Access] Go First Access Authentication.")
 
 	FAR := utils.JsonUnmarshal[request.FAR](FARWithSig.Plain)
 
@@ -104,7 +104,7 @@ func FirstAccessStep2(FARCipher request.MessageCipher, userId string, userMacAdd
 	gxios.ChangeUserAuthStatus(userId, global.AuthStatusCodeCertified)
 
 	// First Access 认证成功
-	log.Printf("First Access Authentication For %s Passed!\n", userId)
+	log.Printf("[First-Access] First Access Authentication For %s Passed!\n", userId)
 
 	return nil
 }

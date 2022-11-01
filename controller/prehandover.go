@@ -38,7 +38,7 @@ func PreHandoverSigFromOtherSatellite(c *gin.Context) {
 
 	// 将该用户设备加入待切换名单
 	global.UserHandoverSet[preHandover.HashedIMSI] = preHandover.PreviousSatelliteId
-	log.Printf("Successfully receive the handover signature from the %s.\n", preHandover.PreviousSatelliteId)
+	log.Printf("[Handover-Access] Successfully receive the handover signature from the %s.\n", preHandover.PreviousSatelliteId)
 
 	response.OKWithMessage(DefaultSuccessMessage, c)
 }

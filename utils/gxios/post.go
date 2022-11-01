@@ -19,7 +19,7 @@ func POST[T any](url string, body T) []byte {
 
 	response, err := http.DefaultClient.Do(request)
 	if err != nil {
-		log.Panicln("http error")
+		log.Panicln("http error", err)
 	}
 
 	defer func(Body io.ReadCloser) {

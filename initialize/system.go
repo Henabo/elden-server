@@ -28,7 +28,7 @@ func SysInit() {
 		session, ok := global.CurrentSessions[mock.UserId]
 		if ok && session.AccessType == global.NormalAccess {
 			log.Println("Keep Session (normal access) For 3 seconds ...")
-			time.Sleep(time.Second * 3)
+			time.Sleep(time.Second * 90)
 			if err := service.PreHandover(mock.UserId); err != nil {
 				log.Panicln(fmt.Errorf("first access error: %+v", err))
 			}
